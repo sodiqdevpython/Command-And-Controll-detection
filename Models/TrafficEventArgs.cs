@@ -1,0 +1,15 @@
+﻿using System;
+
+namespace CommandAndControll.Models
+{
+    public class TrafficEventArgs : EventArgs
+    {
+        public int Pid { get; set; }
+        public int CurrentScore { get; set; }
+        public bool IsSend { get; set; }
+        public string RemoteAddress { get; set; }
+        public int RemotePort { get; set; }
+        public int Size { get; set; }
+        public string ProcessPath { get; set; }
+    }
+}
