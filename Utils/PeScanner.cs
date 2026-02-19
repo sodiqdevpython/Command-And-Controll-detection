@@ -21,7 +21,16 @@ namespace CommandAndControll.Utils
             { "SetWindowsHookExW", "user32.dll" },
             { "GetAsyncKeyState", "user32.dll" },
             { "CryptAcquireContextA", "advapi32.dll" },
-            { "CryptEncrypt", "advapi32.dll" }
+            { "CryptEncrypt", "advapi32.dll" },
+
+            { "GetDC", "user32.dll" },                // Ekran yoki oyna kontekstini olish
+            { "GetWindowDC", "user32.dll" },          // Butun window context ni olish
+            { "CreateCompatibleDC", "gdi32.dll" },    // Xotirada rasm uchun virtual joy yaratish
+            { "CreateCompatibleBitmap", "gdi32.dll" },// Rasm piksellari uchun xotira ajratish
+            { "SelectObject", "gdi32.dll" },          // BitMapni kontekstga bog'lash
+            { "BitBlt", "gdi32.dll" },                // Piksellarni copy qilish uchun
+            { "StretchBlt", "gdi32.dll" },            // Rasmni o'lchamini o'zgartirib nusxalash
+            { "PrintWindow", "user32.dll" },          // Ma'lum bir oynani rasmga olish
         };
 
         public static Dictionary<string, List<string>> GetSuspiciousImports(string filePath)

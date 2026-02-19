@@ -152,13 +152,13 @@ namespace CommandAndControll.Services
 
 
             // 1. Unsigned: +25 ball qo'shdim
-            AddScore(newProc, 20, "Unsigned Process Detected");
+            AddScore(newProc, 25, "Unsigned Process Detected");
 
-            // 2. Unusual Path: +20 (Desktop/Temp...)
+            // 2. Unusual Path: +15 (Desktop/Temp...)
             if (SystemUtils.IsUnusualPath(path))
             {
                 newProc.IsInUnusualPath = true;
-                AddScore(newProc, 20, "Running from Unusual Path");
+                AddScore(newProc, 15, "Running from Unusual Path");
             }
 
             // 3. Autorun Persistence: +30
@@ -189,10 +189,10 @@ namespace CommandAndControll.Services
 
         private void CheckDeadIpConnection(MonitoredProcess proc, NetworkIOTraceData data)
         {
-            string endpoint = $"{data.RemoteAddress}:{data.RemotePort}";
-
             if (data.IsSend)
             {
+                string endpoint = $"{data.RemoteAddress}:{data.RemotePort}";
+
                 if (!proc.UnansweredRequests.ContainsKey(endpoint))
                 {
                     proc.UnansweredRequests[endpoint] = 0;
@@ -204,15 +204,16 @@ namespace CommandAndControll.Services
                 {
                     proc.DeadIpsFlagged.Add(endpoint);
 
-                    AddScore(proc, 20, $"Attempts to connect to a dead IP:Port ({endpoint})");
+                    AddScore(proc, 25, $"Attempts to connect to a dead IP:Port ({endpoint})");
                     LogTo(FileActivity, $"[DEAD IP DETECTED] PID: {proc.Pid} ({proc.ProcessName}) javobsiz manzilga ulanishga urinyapti: {endpoint}");
                 }
             }
             else
             {
-                if (proc.UnansweredRequests.ContainsKey(endpoint))
+                var keys = proc.UnansweredRequests.Keys.ToList();
+                foreach (var key in keys)
                 {
-                    proc.UnansweredRequests[endpoint] = 0;
+                    proc.UnansweredRequests[key] = 0;
                 }
             }
         }
@@ -288,7 +289,7 @@ namespace CommandAndControll.Services
                 if (SystemUtils.IsAutorun(proc.ProcessName, proc.FullPath))
                 {
                     proc.IsAutorun = true;
-                    AddScore(proc, 30, "Persistence Detected (Late Check)"); // +30 ball
+                    AddScore(proc, 25, "Persistence Detected (Late Check)"); // +30 ball
                     LogTo(FileMonitor, $"[LATE CHECK] PID: {proc.Pid} found in Autorun!");
                 }
             }
@@ -299,7 +300,7 @@ namespace CommandAndControll.Services
                 if (data.RemotePort != 80 && data.RemotePort != 443 && data.RemotePort != 8080)
                 {
                     proc.UsedUnusualPort = true;
-                    AddScore(proc, 20, $"Unusual Remote Port: {data.RemotePort}");
+                    AddScore(proc, 15, $"Unusual Remote Port: {data.RemotePort}");
                 }
             }
 
