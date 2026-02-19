@@ -60,6 +60,7 @@
     <Compile Include="Services\C2DetectorService.cs" />
     <Compile Include="Services\SystemUtils.cs" />
     <Compile Include="Services\WhiteListService.cs" />
+    <Compile Include="Utils\PeScanner.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

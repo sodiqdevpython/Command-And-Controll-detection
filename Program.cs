@@ -55,36 +55,5 @@ namespace CommandAndControll
             }
         }
 
-        static void Main2(string[] args)
-        {
-            EventTracer.ClearOldSessions();
-
-            var tracer = EventTracer.Instance;
-
-            tracer.NetworkIOMonitor += OnNetworkEvent;
-
-            tracer.LogMessage += msg => Console.WriteLine($"[LOG] {msg}");
-            tracer.ErrorOccurred += err => Console.WriteLine($"[ERROR] {err}");
-
-            tracer.Start(TraceModule.NetworkIO);
-
-            Console.WriteLine("\nMonitoring boshlandi. Chiqish uchun Enter bosing...\n");
-            Console.ReadLine();
-
-            tracer.StopAll();
-            tracer.Dispose();
-            Console.WriteLine("To'xtadi");
-        }
-
-        static void OnNetworkEvent(NetworkIOTraceData data)
-        {
-            var detector = new C2DetectorService();
-            if (detector.IsLocalAddress(data.RemoteAddress) == false)
-
-            Console.WriteLine($"[NETWORK {(data.IsSend ? "SEND" : "RECV")}] " +
-            $"PID: {data.ProcessId}, {data.LocalAddress}:{data.LocalPort} <-> " +
-            $"{data.RemoteAddress}:{data.RemotePort}, Size: {data.Size} \nPath: {data.ProcessImagePath}");
-        }
-
     }
 }

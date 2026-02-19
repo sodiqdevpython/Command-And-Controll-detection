@@ -1,9 +1,11 @@
-﻿using System;
+﻿using CommandAndControll.Models;
+using MyEventTracer;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using MyEventTracer;
-using CommandAndControll.Models;
+using CommandAndControll.Utils;
 
 namespace CommandAndControll.Services
 {
@@ -167,8 +169,73 @@ namespace CommandAndControll.Services
                 AddScore(newProc, 30, "Persistence Found (Autorun)");
             }
 
+            if (!newProc.IsPeChecked)
+            {
+                newProc.IsPeChecked = true;
+
+                var imports = PeScanner.GetSuspiciousImports(path);
+
+                if (imports.Count > 0)
+                {
+                    newProc.SuspiciousImports = imports;
+                    EvaluatePeImports(newProc, imports);
+                }
+            }
+
             _monitoringPids.TryAdd(data.ProcessId, newProc);
             CheckForAlert(newProc);
+        }
+
+
+        // File header dan u chaqirgan shubxali api larni olishim uchun bu faqat unsigned va internetga chiqayotgan bo'lsa keyin ishlaydi
+        private void EvaluatePeImports(MonitoredProcess proc, Dictionary<string, List<string>> imports)
+        {
+            int suspiciousApiCount = 0;
+            int totalApiScore = 0;
+
+            foreach (var dll in imports)
+            {
+                foreach (var api in dll.Value)
+                {
+                    suspiciousApiCount++;
+
+                    int apiScore = 0;
+                    string threatCategory = "Shubhali API ni chaqirmoqchi";
+                    string apiLower = api.ToLower();
+
+                    if (apiLower.Contains("remotethread") || apiLower.Contains("writeprocessmemory"))
+                    {
+                        apiScore = 10;
+                        threatCategory = $"Process Injection qilsa bo'ladigan funksiyalarni chaqirdi";
+                    }
+                    else if (apiLower.Contains("hook") || apiLower.Contains("asynckey"))
+                    {
+                        apiScore = 8;
+                        threatCategory = "Keylogger bo'lishi mumkin";
+                    }
+                    else if (apiLower.Contains("virtualalloc"))
+                    {
+                        apiScore = 3;
+                        threatCategory = "Xotira ajratish uchun qo'shimcha api";
+                    }
+                    else if (apiLower.Contains("debugger"))
+                    {
+                        apiScore = 4;
+                        threatCategory = "Anti-Analysis tekshiruvdan qochish bo'lishi mumkin";
+                    }
+                    else
+                    {
+                        apiScore = 3;
+                        threatCategory = "Shifrlash uchun mo'ljallangan windows api larni chaqirdi";
+                    }
+
+                    totalApiScore += apiScore;
+
+                    AddScore(proc, apiScore, $"{threatCategory} => API: {api} ({dll.Key})");
+                }
+            }
+
+            LogTo(FileActivity, $"[PE SCAN] PID: {proc.Pid} da {suspiciousApiCount} ta xavfli API topildi. Toplangan jami ball: {totalApiScore}");
         }
 
         // Traffic ni tahlil qilishim uchun

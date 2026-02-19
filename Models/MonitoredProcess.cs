@@ -24,6 +24,11 @@ namespace CommandAndControll.Models
         public bool UsedUnusualPort { get; set; }
         public int RatioPenaltyCount { get; set; } // Max 5
 
+        // file pe ni o'qishim uchun o'zi nimalar chaqirilgan qaysi dll dan qaysi funksiyalarni call qilmoqchi shuni o'qishim uchun
+        public bool IsPeChecked { get; set; }
+        public bool IsSuspiciouslyPacked { get; set; }
+        public Dictionary<string, List<string>> SuspiciousImports { get; set; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
+
         // Alert bir marta chiqqandan keyin qayta-qayta spam qilmaslik uchun qo'shimcha field
         public bool AlertTriggered { get; set; }
 
@@ -33,6 +38,7 @@ namespace CommandAndControll.Models
             FullPath = path;
             ProcessName = name;
             Score = 0;
+            IsPeChecked = false;
         }
 
         public void AddScore(int points, string reason)
