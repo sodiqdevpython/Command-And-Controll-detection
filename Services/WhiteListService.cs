@@ -37,7 +37,7 @@ namespace CommandAndControll.Services
                             _blacklistedIps.Add(line.Trim());
                         }
                     }
-                    Console.WriteLine($"{_blacklistedIps.Count}");
+                    //Console.WriteLine($"{_blacklistedIps.Count}");
                 }
                 else
                 {

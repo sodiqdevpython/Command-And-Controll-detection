@@ -144,7 +144,9 @@ namespace CommandAndControll.Services
 
             // B) Unsigned -> Monitoring
             var newProc = new MonitoredProcess(data.ProcessId, path, data.ProcessName);
-            LogTo(FileMonitor, $"[START WATCH] PID: {data.ProcessId} Path: {path} | Reason: Unsigned");
+            string msg = $"[START WATCH] PID: {data.ProcessId} Path: {path} | Reason: Unsigned";
+            LogTo(FileMonitor, msg);
+            LogTo(FileActivity, msg);
 
 
             // 1. Unsigned: +25 ball qo'shdim
@@ -175,6 +177,9 @@ namespace CommandAndControll.Services
             proc.PacketsCount++;
             if (data.IsSend) proc.SendBytes += (ulong)data.Size;
             else proc.ReceivedBytes += (ulong)data.Size;
+
+            string direction = data.IsSend ? "SEND" : "RECV";
+            LogTo(FileMonitor, $"[TRAFFIC] PID: {proc.Pid} [Score: {proc.Score}] | {direction} => {data.RemoteAddress}:{data.RemotePort} | {data.Size} byte");
 
             // Late autrun tekshirish uchun
             // Virus ishga tushgandan keyin o'zini registryga yozishi mumkin.
@@ -234,7 +239,11 @@ namespace CommandAndControll.Services
             if (proc.Score >= 80 && !proc.AlertTriggered)
             {
                 proc.AlertTriggered = true;
-                LogTo(FileActivity, $"[ ALERT ] PID: {proc.Pid} => {proc.Score} ball yig'di");
+                string alertMsg = $"[ ALERT ] PID: {proc.Pid} => {proc.Score} ball yig'di";
+                LogTo(FileActivity, alertMsg);
+                LogTo(FileMonitor, alertMsg);
+
+                LogTo(FileActivity, alertMsg);
 
                 TriggerAlert(proc.Pid, proc.FullPath, proc.Score, string.Join(", ", proc.Reasons));
             }
@@ -263,13 +272,21 @@ namespace CommandAndControll.Services
             }
         }
 
-        private bool IsLocalAddress(string ip)
+        //public bool IsLocalAddress(string ip)
+        //{
+        //    if (string.IsNullOrEmpty(ip)) return false;
+        //    return ip == "127.0.0.1" || ip == "::1" ||
+        //           ip.StartsWith("192.168.") ||
+        //           ip.StartsWith("10.") ||
+        //           ip.StartsWith("172.16.");
+        //}
+
+        public bool IsLocalAddress(string ip)
         {
             if (string.IsNullOrEmpty(ip)) return false;
-            return ip == "127.0.0.1" || ip == "::1" ||
-                   ip.StartsWith("192.168.") ||
-                   ip.StartsWith("10.") ||
-                   ip.StartsWith("172.16.");
+
+            return ip == "127.0.0.1" || ip == "::1" || ip == "localhost";
         }
+
     }
 }
