@@ -152,7 +152,7 @@ namespace CommandAndControll.Services
 
 
             // 1. Unsigned: +25 ball qo'shdim
-            AddScore(newProc, 25, "Unsigned Process Detected");
+            AddScore(newProc, 20, "Unsigned Process Detected");
 
             // 2. Unusual Path: +20 (Desktop/Temp...)
             if (SystemUtils.IsUnusualPath(path))
@@ -186,6 +186,36 @@ namespace CommandAndControll.Services
             CheckForAlert(newProc);
         }
 
+
+        private void CheckDeadIpConnection(MonitoredProcess proc, NetworkIOTraceData data)
+        {
+            string endpoint = $"{data.RemoteAddress}:{data.RemotePort}";
+
+            if (data.IsSend)
+            {
+                if (!proc.UnansweredRequests.ContainsKey(endpoint))
+                {
+                    proc.UnansweredRequests[endpoint] = 0;
+                }
+
+                proc.UnansweredRequests[endpoint]++;
+
+                if (proc.UnansweredRequests[endpoint] >= 10 && !proc.DeadIpsFlagged.Contains(endpoint))
+                {
+                    proc.DeadIpsFlagged.Add(endpoint);
+
+                    AddScore(proc, 20, $"Attempts to connect to a dead IP:Port ({endpoint})");
+                    LogTo(FileActivity, $"[DEAD IP DETECTED] PID: {proc.Pid} ({proc.ProcessName}) javobsiz manzilga ulanishga urinyapti: {endpoint}");
+                }
+            }
+            else
+            {
+                if (proc.UnansweredRequests.ContainsKey(endpoint))
+                {
+                    proc.UnansweredRequests[endpoint] = 0;
+                }
+            }
+        }
 
         // File header dan u chaqirgan shubxali api larni olishim uchun bu faqat unsigned va internetga chiqayotgan bo'lsa keyin ishlaydi
         private void EvaluatePeImports(MonitoredProcess proc, Dictionary<string, List<string>> imports)
@@ -248,9 +278,11 @@ namespace CommandAndControll.Services
             string direction = data.IsSend ? "SEND" : "RECV";
             LogTo(FileMonitor, $"[TRAFFIC] PID: {proc.Pid} [Score: {proc.Score}] | {direction} => {data.RemoteAddress}:{data.RemotePort} | {data.Size} byte");
 
+            CheckDeadIpConnection(proc, data);
+
             // Late autrun tekshirish uchun
             // Virus ishga tushgandan keyin o'zini registryga yozishi mumkin.
-            // Buni aniqlash uchun har 20-paketda qayta tekshirishim uchun
+            // Buni aniqlash har 20-paketda qayta tekshirishim
             if (!proc.IsAutorun && proc.PacketsCount % 20 == 0)
             {
                 if (SystemUtils.IsAutorun(proc.ProcessName, proc.FullPath))
@@ -298,6 +330,7 @@ namespace CommandAndControll.Services
         private void AddScore(MonitoredProcess proc, int points, string reason)
         {
             proc.AddScore(points, reason);
+            if (proc.Score > 100) proc.Score = 100;
             LogTo(FileMonitor, $"   => [SCORE UP] PID: {proc.Pid} | +{points} => Total: {proc.Score} | Reason: {reason}");
         }
 

@@ -29,6 +29,10 @@ namespace CommandAndControll.Models
         public bool IsSuspiciouslyPacked { get; set; }
         public Dictionary<string, List<string>> SuspiciousImports { get; set; } = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
 
+        // Dead ip va portga so'rov yuborayotganlarni saqlashim uchun
+        public Dictionary<string, int> UnansweredRequests { get; set; } = new Dictionary<string, int>();
+        public HashSet<string> DeadIpsFlagged { get; set; } = new HashSet<string>();
+
         // Alert bir marta chiqqandan keyin qayta-qayta spam qilmaslik uchun qo'shimcha field
         public bool AlertTriggered { get; set; }
 
