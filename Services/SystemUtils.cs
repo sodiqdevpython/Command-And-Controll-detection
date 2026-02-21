@@ -23,6 +23,15 @@ namespace CommandAndControl.Services
             }
         }
 
+        public static bool IsTrustedMicrosoftPath(string filePath)
+        {
+            if (string.IsNullOrEmpty(filePath)) return false;
+
+            string lowerPath = filePath.ToLowerInvariant();
+
+            return lowerPath.Contains(@"\program files\windowsapps\");
+        }
+
         // Unusual folderlar Desktop ga ham faylni kiritish va ishga tushirish osonligi uchun uniyam qo'shdim
         public static bool IsUnusualPath(string filePath)
         {

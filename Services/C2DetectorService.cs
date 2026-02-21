@@ -142,6 +142,13 @@ namespace CommandAndControl.Services
             string path = data.ProcessImagePath;
             if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
 
+            if (SystemUtils.IsTrustedMicrosoftPath(path))
+            {
+                _whiteListService.AddToWhitelist(data.ProcessId);
+                LogTo(FileWhitelist, $"[ADD] PID: {data.ProcessId} Name: {data.ProcessName} | Reason: Trusted Microsoft Path (WindowsApps)");
+                return;
+            }
+
             // Signed -> Whitelist
             if (SystemUtils.IsSigned(path))
             {
