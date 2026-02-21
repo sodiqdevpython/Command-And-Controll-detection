@@ -1,13 +1,13 @@
-﻿using CommandAndControll.Models;
+﻿using CommandAndControl.Models;
 using MyEventTracer;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using CommandAndControll.Utils;
+using CommandAndControl.Utils;
 
-namespace CommandAndControll.Services
+namespace CommandAndControl.Services
 {
     public class C2DetectorService
     {
@@ -25,6 +25,12 @@ namespace CommandAndControll.Services
         // Eventlar
         public event EventHandler<AlertEventArgs> OnAlert;
         public event EventHandler<TrafficEventArgs> OnTrafficDetected;
+        public event EventHandler<MonitoredProcess> OnScoreChanged;
+
+        public List<MonitoredProcess> GetAllMonitoredProcesses()
+        {
+            return _monitoringPids.Values.ToList();
+        }
 
         public C2DetectorService()
         {
@@ -189,16 +195,11 @@ namespace CommandAndControll.Services
 
         private void CheckDeadIpConnection(MonitoredProcess proc, NetworkIOTraceData data)
         {
+            string endpoint = $"{data.RemoteAddress}:{data.RemotePort}";
+
             if (data.IsSend)
             {
-                string endpoint = $"{data.RemoteAddress}:{data.RemotePort}";
-
-                if (!proc.UnansweredRequests.ContainsKey(endpoint))
-                {
-                    proc.UnansweredRequests[endpoint] = 0;
-                }
-
-                proc.UnansweredRequests[endpoint]++;
+                proc.RegisterUnansweredRequest(endpoint);
 
                 if (proc.UnansweredRequests[endpoint] >= 10 && !proc.DeadIpsFlagged.Contains(endpoint))
                 {
@@ -210,11 +211,7 @@ namespace CommandAndControll.Services
             }
             else
             {
-                var keys = proc.UnansweredRequests.Keys.ToList();
-                foreach (var key in keys)
-                {
-                    proc.UnansweredRequests[key] = 0;
-                }
+                proc.ResetUnansweredRequest(endpoint);
             }
         }
 
@@ -284,13 +281,18 @@ namespace CommandAndControll.Services
             // Late autrun tekshirish uchun
             // Virus ishga tushgandan keyin o'zini registryga yozishi mumkin.
             // Buni aniqlash har 20-paketda qayta tekshirishim
-            if (!proc.IsAutorun && proc.PacketsCount % 20 == 0)
+            if (!proc.IsAutorun && !proc.IsLateAutorunChecked)
             {
-                if (SystemUtils.IsAutorun(proc.ProcessName, proc.FullPath))
+                if ((DateTime.Now - proc.FirstSeenTime).TotalSeconds >= 5)
                 {
-                    proc.IsAutorun = true;
-                    AddScore(proc, 25, "Persistence Detected (Late Check)"); // +30 ball
-                    LogTo(FileMonitor, $"[LATE CHECK] PID: {proc.Pid} found in Autorun!");
+                    proc.IsLateAutorunChecked = true;
+
+                    if (SystemUtils.IsAutorun(proc.ProcessName, proc.FullPath))
+                    {
+                        proc.IsAutorun = true;
+                        AddScore(proc, 25, "Persistence Detected (Late Check)");
+                        LogTo(FileMonitor, $"[LATE CHECK] PID: {proc.Pid} found in Autorun!");
+                    }
                 }
             }
 
@@ -300,7 +302,7 @@ namespace CommandAndControll.Services
                 if (data.RemotePort != 80 && data.RemotePort != 443 && data.RemotePort != 8080)
                 {
                     proc.UsedUnusualPort = true;
-                    AddScore(proc, 15, $"Unusual Remote Port: {data.RemotePort}");
+                    AddScore(proc, 20, $"Unusual Remote Port: {data.RemotePort}");
                 }
             }
 
@@ -330,21 +332,29 @@ namespace CommandAndControll.Services
 
         private void AddScore(MonitoredProcess proc, int points, string reason)
         {
+            int oldScore = proc.Score;
+
             proc.AddScore(points, reason);
-            if (proc.Score > 100) proc.Score = 100;
-            LogTo(FileMonitor, $"   => [SCORE UP] PID: {proc.Pid} | +{points} => Total: {proc.Score} | Reason: {reason}");
+
+            int newScore = proc.Score;
+
+            if (newScore > oldScore)
+            {
+                LogTo(FileMonitor, $"=> [SCORE UP] PID: {proc.Pid} | +{points} => Total: {newScore} | Reason: {reason}");
+
+                OnScoreChanged?.Invoke(this, proc);
+            }
         }
 
         private void CheckForAlert(MonitoredProcess proc)
         {
-            if (proc.Score >= 80 && !proc.AlertTriggered)
+            if (proc.Score >= 70 && !proc.AlertTriggered)
             {
                 proc.AlertTriggered = true;
-                string alertMsg = $"[ ALERT ] PID: {proc.Pid} => {proc.Score} ball yig'di";
+
+                string alertMsg = $"[ DANGER ] PID: {proc.Pid}: {proc.Score} ball";
                 LogTo(FileActivity, alertMsg);
                 LogTo(FileMonitor, alertMsg);
-
-                LogTo(FileActivity, alertMsg);
 
                 TriggerAlert(proc.Pid, proc.FullPath, proc.Score, string.Join(", ", proc.Reasons));
             }

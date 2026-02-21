@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CommandAndControll.Models
+namespace CommandAndControl.Models
 {
     public class AlertEventArgs : EventArgs
     {

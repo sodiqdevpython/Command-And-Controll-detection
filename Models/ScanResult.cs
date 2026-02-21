@@ -1,4 +1,4 @@
-﻿namespace CommandAndControll.Models
+﻿namespace CommandAndControl.Models
 {
     public enum ScanResult
     {

@@ -3,7 +3,7 @@ using System.IO;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Win32;
 
-namespace CommandAndControll.Services
+namespace CommandAndControl.Services
 {
     public static class SystemUtils
     {
@@ -27,15 +27,17 @@ namespace CommandAndControll.Services
         public static bool IsUnusualPath(string filePath)
         {
             if (string.IsNullOrEmpty(filePath)) return false;
-            string lowerPath = filePath.ToLower();
 
-            // Viruslar eng ko'p yashirinadigan joylar:
-            return lowerPath.Contains("\\appdata\\local\\temp") || // Temp
-                   lowerPath.Contains("\\downloads") || // Downloads
-                   lowerPath.Contains("\\desktop") ||  // Desktop (YANGI)
-                   lowerPath.Contains("\\recycle.bin") ||
-                   lowerPath.Contains("\\programdata") || // ProgramData
-                   lowerPath.Contains("\\users\\public"); // Public user papkasi
+            // Faqat bitta allocation qilinadi
+            string lowerPath = filePath.ToLowerInvariant();
+
+            // Ikki tomoniga '\' qo'shib tekshiramiz. Tez va aniq!
+            return lowerPath.Contains("\\appdata\\local\\temp\\") ||
+                   lowerPath.Contains("\\downloads\\") ||
+                   lowerPath.Contains("\\desktop\\") ||
+                   lowerPath.Contains("\\$recycle.bin\\") ||
+                   lowerPath.Contains("\\programdata\\") ||
+                   lowerPath.Contains("\\users\\public\\");
         }
 
         // 3. Autorun da borligini tekshirishim uchun

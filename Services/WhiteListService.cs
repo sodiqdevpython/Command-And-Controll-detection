@@ -3,7 +3,7 @@ using System.Collections.Concurrent; // Thread-safe collections ga kerak bo'ldi 
 using System.Collections.Generic;
 using System.IO;
 
-namespace CommandAndControll.Services
+namespace CommandAndControl.Services
 {
     public class WhiteListService
     {
