@@ -48,14 +48,13 @@ namespace CommandAndControll
             Console.WriteLine($"[SCORE UPDATE] PID: {proc.Pid} ({proc.ProcessName}) ({proc.FullPath}) -> ball: {proc.Score}");
         }
 
-        // 3. UI UCHUN: Tarmoq trafigi loglari (Har bir paket uchun)
         //private static void HandleTrafficDetected(object sender, TrafficEventArgs e)
         //{
         //    string direction = e.IsSend ? "SEND =>" : "RECV <-";
         //    Console.WriteLine($"[TRAFFIC] PID: {e.Pid} | {direction} {e.RemoteAddress}:{e.RemotePort} ({e.Size} bytes)");
         //}
 
-        // 4. UI UCHUN: Barcha jarayonlarni ro'yxatini olish (Snapshot)
+        // 4. UI UCHUN: Barcha jarayonlarni ro'yxatini olish ga kerak
         private static void DemonstrateSnapshot(C2DetectorService detector)
         {
             List<MonitoredProcess> allProcesses = detector.GetAllMonitoredProcesses();
