@@ -1,25 +1,87 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
-using Microsoft.Win32;
 
 namespace CommandAndControl.Services
 {
     public static class SystemUtils
     {
+        [DllImport("wintrust.dll", SetLastError = true)]
+        private static extern bool CryptCATAdminAcquireContext(out IntPtr phCatAdmin, IntPtr pgSubsystem, int dwFlags);
+
+        [DllImport("wintrust.dll", SetLastError = true)]
+        private static extern bool CryptCATAdminCalcHashFromFileHandle(SafeFileHandle hFile, ref int pcbHash, byte[] pbHash, int dwFlags);
+
+        [DllImport("wintrust.dll", SetLastError = true)]
+        private static extern IntPtr CryptCATAdminEnumCatalogFromHash(IntPtr hCatAdmin, byte[] pbHash, int cbHash, int dwFlags, ref IntPtr phPrevCatInfo);
+
+        [DllImport("wintrust.dll", SetLastError = true)]
+        private static extern bool CryptCATAdminReleaseCatalogContext(IntPtr hCatAdmin, IntPtr hCatInfo, int dwFlags);
+
+        [DllImport("wintrust.dll", SetLastError = true)]
+        private static extern bool CryptCATAdminReleaseContext(IntPtr hCatAdmin, int dwFlags);
+
         // Digital sign tekshirishim uchun
         public static bool IsSigned(string filePath)
         {
+            if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return false;
+
+            if (HasEmbeddedSignature(filePath)) return true;
+
+            return HasCatalogSignature(filePath);
+        }
+
+        private static bool HasEmbeddedSignature(string filePath)
+        {
             try
             {
-                if (string.IsNullOrEmpty(filePath) || !File.Exists(filePath)) return false;
-
                 var cert = X509Certificate.CreateFromSignedFile(filePath);
                 return cert != null;
             }
             catch
             {
-                return false; // Xatolik bo'lsa yoki imzo yo'q bo'lsa false deyman
+                return false;
+            }
+        }
+
+        private static bool HasCatalogSignature(string filePath)
+        {
+            IntPtr hCatAdmin = IntPtr.Zero;
+            IntPtr hCatInfo = IntPtr.Zero;
+
+            try
+            {
+                if (!CryptCATAdminAcquireContext(out hCatAdmin, IntPtr.Zero, 0))
+                    return false;
+
+                using (FileStream fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+                {
+                    int hashSize = 0;
+                    CryptCATAdminCalcHashFromFileHandle(fs.SafeFileHandle, ref hashSize, null, 0);
+                    if (hashSize == 0) return false;
+                    byte[] hash = new byte[hashSize];
+                    if (!CryptCATAdminCalcHashFromFileHandle(fs.SafeFileHandle, ref hashSize, hash, 0))
+                        return false;
+
+                    IntPtr hPrevCatInfo = IntPtr.Zero;
+                    hCatInfo = CryptCATAdminEnumCatalogFromHash(hCatAdmin, hash, hashSize, 0, ref hPrevCatInfo);
+
+                    return hCatInfo != IntPtr.Zero;
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            finally
+            {
+                if (hCatInfo != IntPtr.Zero)
+                    CryptCATAdminReleaseCatalogContext(hCatAdmin, hCatInfo, 0);
+                if (hCatAdmin != IntPtr.Zero)
+                    CryptCATAdminReleaseContext(hCatAdmin, 0);
             }
         }
 

@@ -92,7 +92,7 @@ namespace CommandAndControl.Services
                 {
                     LogTo(FileActivity, $"[ BLACKLIST HIT ] PID: {pid} ({data.ProcessName}) connected to {data.RemoteAddress}");
 
-                    TriggerAlert(pid, data.ProcessImagePath, 100, $"BLACKLISTED IP CONNECTION: {data.RemoteAddress}");
+                    TriggerAlert(pid, data.ProcessImagePath, 10, $"BLACKLISTED IP CONNECTION: {data.RemoteAddress}");
 
                     // Alert bergandan keyin uni boshqa chiqarmaslik kerak shunga whitelist ga qo'shib yuboraman
                     if (!_whiteListService.IsWhitelisted(pid))
@@ -165,13 +165,13 @@ namespace CommandAndControl.Services
 
 
             // 1. Unsigned: +25 ball qo'shdim
-            AddScore(newProc, 25, "Unsigned Process Detected");
+            AddScore(newProc, 2.5f, "Unsigned Process Detected");
 
             // 2. Unusual Path: +15 (Desktop/Temp...)
             if (SystemUtils.IsUnusualPath(path))
             {
                 newProc.IsInUnusualPath = true;
-                AddScore(newProc, 15, "Running from Unusual Path");
+                AddScore(newProc, 1.5f, "Running from Unusual Path");
             }
 
             // 3. Autorun Persistence: +30
@@ -179,7 +179,7 @@ namespace CommandAndControl.Services
             if (SystemUtils.IsAutorun(data.ProcessName, path))
             {
                 newProc.IsAutorun = true;
-                AddScore(newProc, 30, "Persistence Found (Autorun)");
+                AddScore(newProc, 3, "Persistence Found (Autorun)");
             }
 
             if (!newProc.IsPeChecked)
@@ -208,11 +208,11 @@ namespace CommandAndControl.Services
             {
                 proc.RegisterUnansweredRequest(endpoint);
 
-                if (proc.UnansweredRequests[endpoint] >= 10 && !proc.DeadIpsFlagged.Contains(endpoint))
+                if (proc.UnansweredRequests[endpoint] >= 1 && !proc.DeadIpsFlagged.Contains(endpoint))
                 {
                     proc.DeadIpsFlagged.Add(endpoint);
 
-                    AddScore(proc, 25, $"Attempts to connect to a dead IP:Port ({endpoint})");
+                    AddScore(proc, 2.5f, $"Attempts to connect to a dead IP:Port ({endpoint})");
                     LogTo(FileActivity, $"[DEAD IP DETECTED] PID: {proc.Pid} ({proc.ProcessName}) javobsiz manzilga ulanishga urinyapti: {endpoint}");
                 }
             }
@@ -226,7 +226,7 @@ namespace CommandAndControl.Services
         private void EvaluatePeImports(MonitoredProcess proc, Dictionary<string, List<string>> imports)
         {
             int suspiciousApiCount = 0;
-            int totalApiScore = 0;
+            float totalApiScore = 0;
 
             foreach (var dll in imports)
             {
@@ -234,33 +234,33 @@ namespace CommandAndControl.Services
                 {
                     suspiciousApiCount++;
 
-                    int apiScore = 0;
+                    float apiScore = 0;
                     string threatCategory = "Shubhali API ni chaqirmoqchi";
                     string apiLower = api.ToLower();
 
                     if (apiLower.Contains("remotethread") || apiLower.Contains("writeprocessmemory"))
                     {
-                        apiScore = 10;
+                        apiScore = 1;
                         threatCategory = $"Process Injection qilsa bo'ladigan funksiyalarni chaqirdi";
                     }
                     else if (apiLower.Contains("hook") || apiLower.Contains("asynckey"))
                     {
-                        apiScore = 8;
+                        apiScore = 0.8f;
                         threatCategory = "Keylogger bo'lishi mumkin";
                     }
                     else if (apiLower.Contains("virtualalloc"))
                     {
-                        apiScore = 3;
+                        apiScore = 0.3f;
                         threatCategory = "Xotira ajratish uchun qo'shimcha api";
                     }
                     else if (apiLower.Contains("debugger"))
                     {
-                        apiScore = 4;
+                        apiScore = 0.4f;
                         threatCategory = "Anti-Analysis tekshiruvdan qochish bo'lishi mumkin";
                     }
                     else
                     {
-                        apiScore = 3;
+                        apiScore = 0.3f;
                         threatCategory = "Shifrlash uchun mo'ljallangan windows api larni chaqirdi";
                     }
 
@@ -297,7 +297,7 @@ namespace CommandAndControl.Services
                     if (SystemUtils.IsAutorun(proc.ProcessName, proc.FullPath))
                     {
                         proc.IsAutorun = true;
-                        AddScore(proc, 25, "Persistence Detected (Late Check)");
+                        AddScore(proc, 2.5f, "Persistence Detected (Late Check)");
                         LogTo(FileMonitor, $"[LATE CHECK] PID: {proc.Pid} found in Autorun!");
                     }
                 }
@@ -309,12 +309,12 @@ namespace CommandAndControl.Services
                 if (data.RemotePort != 80 && data.RemotePort != 443 && data.RemotePort != 8080)
                 {
                     proc.UsedUnusualPort = true;
-                    AddScore(proc, 20, $"Unusual Remote Port: {data.RemotePort}");
+                    AddScore(proc, 2, $"Unusual Remote Port: {data.RemotePort}");
                 }
             }
 
             // Ratio check uchun faqat ma'lumot jo'nativorsa send qilaverda 90%+ 
-            if (proc.RatioPenaltyCount < 5 && proc.PacketsCount % 10 == 0)
+            if (proc.RatioCount < 5 && proc.PacketsCount % 10 == 0)
             {
                 double total = proc.SendBytes + proc.ReceivedBytes;
                 if (total > 0)
@@ -322,8 +322,8 @@ namespace CommandAndControl.Services
                     double sendRatio = (double)proc.SendBytes / total;
                     if (sendRatio > 0.90) // 90% dan ko'p Send bo'ldi
                     {
-                        proc.RatioPenaltyCount++;
-                        AddScore(proc, 5, $"Suspicious Upload Ratio ({proc.RatioPenaltyCount}/5)");
+                        proc.RatioCount++;
+                        AddScore(proc, 0.5f, $"Suspicious Upload Ratio ({proc.RatioCount}/5)");
                     }
                 }
             }
@@ -331,19 +331,19 @@ namespace CommandAndControl.Services
             // Volume Check (>5GB) +50 ball
             if (proc.SendBytes > 5368709120 && !proc.Reasons.Any(r => r.Contains("Massive")))
             {
-                AddScore(proc, 50, "Massive Data Exfiltration (>5GB)");
+                AddScore(proc, 5, "Massive Data Exfiltration (>5GB)");
             }
 
             CheckForAlert(proc);
         }
 
-        private void AddScore(MonitoredProcess proc, int points, string reason)
+        private void AddScore(MonitoredProcess proc, float points, string reason)
         {
-            int oldScore = proc.Score;
+            float oldScore = proc.Score;
 
             proc.AddScore(points, reason);
 
-            int newScore = proc.Score;
+            float newScore = proc.Score;
 
             if (newScore > oldScore)
             {
@@ -355,7 +355,7 @@ namespace CommandAndControl.Services
 
         private void CheckForAlert(MonitoredProcess proc)
         {
-            if (proc.Score >= 70 && !proc.AlertTriggered)
+            if (proc.Score >= 7 && !proc.AlertTriggered)
             {
                 proc.AlertTriggered = true;
 
@@ -367,7 +367,7 @@ namespace CommandAndControl.Services
             }
         }
 
-        private void TriggerAlert(int pid, string path, int score, string reasons)
+        private void TriggerAlert(int pid, string path, float score, string reasons)
         {
             OnAlert?.Invoke(this, new AlertEventArgs
             {

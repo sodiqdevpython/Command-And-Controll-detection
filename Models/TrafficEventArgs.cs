@@ -5,7 +5,7 @@ namespace CommandAndControl.Models
     public class TrafficEventArgs : EventArgs
     {
         public int Pid { get; set; }
-        public int CurrentScore { get; set; }
+        public float CurrentScore { get; set; }
         public bool IsSend { get; set; }
         public string RemoteAddress { get; set; }
         public int RemotePort { get; set; }

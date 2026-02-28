@@ -16,7 +16,7 @@ namespace CommandAndControl.Models
         public ulong PacketsCount { get; set; }
 
         // Ball va Sabablari
-        public int Score { get; set; }
+        public float Score { get; set; }
         public ConcurrentQueue<string> Reasons { get; set; } = new ConcurrentQueue<string>();
 
         private readonly object _scoreLock = new object();
@@ -29,7 +29,7 @@ namespace CommandAndControl.Models
         public bool IsLateAutorunChecked { get; set; }
 
         public bool UsedUnusualPort { get; set; }
-        public int RatioPenaltyCount { get; set; } // Max 5
+        public int RatioCount { get; set; } // Max 5
 
         // file pe ni o'qishim uchun o'zi nimalar chaqirilgan qaysi dll dan qaysi funksiyalarni call qilmoqchi shuni o'qishim uchun
         public bool IsPeChecked { get; set; }
@@ -43,7 +43,7 @@ namespace CommandAndControl.Models
         private Queue<string> _unansweredQueue = new Queue<string>();
         private const int MaxTrackedIps = 100;
 
-        // Alert bir marta chiqqandan keyin qayta-qayta spam qilmaslik uchun qo'shimcha field
+        // Alert bir marta chiqqandan keyin qayta ko'rsamatslik uchun qo'shimcha field
         public bool AlertTriggered { get; set; }
 
         public void RegisterUnansweredRequest(string endpoint)
@@ -89,14 +89,14 @@ namespace CommandAndControl.Models
             IsLateAutorunChecked = false;
         }
 
-        public void AddScore(int points, string reason)
+        public void AddScore(float points, string reason)
         {
             lock (_scoreLock)
             {
-                if (Score >= 100) return;
+                if (Score >= 10) return;
 
                 Score += points;
-                if (Score > 100) Score = 100;
+                if (Score > 10) Score = 10;
 
                 Reasons.Enqueue($"{reason} (+{points})");
             }
