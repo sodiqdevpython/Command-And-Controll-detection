@@ -38,8 +38,10 @@ namespace CommandAndControl.Services
         {
             try
             {
-                var cert = X509Certificate.CreateFromSignedFile(filePath);
-                return cert != null;
+                using (X509Certificate cert = X509Certificate.CreateFromSignedFile(filePath))
+                {
+                    return true;
+                }
             }
             catch
             {
