@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent; // Thread-safe collections ga kerak bo'ldi bu
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 
@@ -7,10 +7,8 @@ namespace CommandAndControl.Services
 {
     public class WhiteListService
     {
-        // Thread-safe PID ro'yxati (whitelist pids)
         private ConcurrentDictionary<int, byte> _whitelistedPids = new ConcurrentDictionary<int, byte>();
 
-        // Qora ro'yxatdagi IP manzillar
         private HashSet<string> _blacklistedIps = new HashSet<string>();
 
         private const string BlacklistFileName = "blacklist.txt";

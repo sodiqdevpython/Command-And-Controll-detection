@@ -1,11 +1,13 @@
-﻿using CommandAndControl.Models;
-using MyEventTracer;
+﻿using dc_event_tracer.Models;
+using dc_event_tracer.Parsers;
+using CommandAndControl.Models;
+using CommandAndControl.Utils;
+using dc_event_tracer;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using CommandAndControl.Utils;
 
 namespace CommandAndControl.Services
 {
@@ -13,7 +15,6 @@ namespace CommandAndControl.Services
     {
         private ConcurrentDictionary<int, MonitoredProcess> _monitoringPids;
         private readonly WhiteListService _whiteListService;
-        private readonly EventTracer _tracer;
 
         // Log fayllarim test uchun
         private const string FileActivity = "activity_log.txt";
@@ -36,7 +37,6 @@ namespace CommandAndControl.Services
         {
             _monitoringPids = new ConcurrentDictionary<int, MonitoredProcess>();
             _whiteListService = new WhiteListService();
-            _tracer = EventTracer.Instance;
 
             LogTo(FileActivity, $"\n\n");
             LogTo(FileActivity, $"   SYSTEM STARTED: {DateTime.Now}");
@@ -45,17 +45,15 @@ namespace CommandAndControl.Services
 
         public void Start()
         {
-            _tracer.ProcessMonitor += OnProcessEvent;
-            _tracer.NetworkIOMonitor += OnNetworkEvent;
-            _tracer.Start(TraceModule.Process);
-            _tracer.Start(TraceModule.NetworkIO);
+            EventDispatcher.OnProcessEvent += OnProcessEvent;
+            EventDispatcher.OnNetworkIOEvent += OnNetworkEvent;
+            event_tracer.Start();
             LogTo(FileActivity, "[SYSTEM] MyEventTracer ga ulandi");
         }
 
         public void Stop()
         {
-            _tracer.ProcessMonitor -= OnProcessEvent;
-            _tracer.NetworkIOMonitor -= OnNetworkEvent;
+            event_tracer.Stop();
             LogTo(FileActivity, $"[SYSTEM] Monitoring to'xtadi: {DateTime.Now}");
         }
 

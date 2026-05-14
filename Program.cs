@@ -1,6 +1,6 @@
 ﻿using CommandAndControl.Models;
 using CommandAndControl.Services;
-using MyEventTracer;
+
 using System;
 using System.Collections.Generic;
 
@@ -45,7 +45,7 @@ namespace CommandAndControll
 
         private static void HandleScoreChanged(object sender, MonitoredProcess proc)
         {
-            Console.WriteLine($"[SCORE UPDATE] PID: {proc.Pid} ({proc.ProcessName}) ({proc.FullPath}) -> ball: {proc.Score}");
+            Console.WriteLine($"[SCORE UPDATE] PID: {proc.Pid} ({proc.ProcessName}) ({proc.FullPath}) => ball: {proc.Score}");
         }
 
         //private static void HandleTrafficDetected(object sender, TrafficEventArgs e)
@@ -54,7 +54,7 @@ namespace CommandAndControll
         //    Console.WriteLine($"[TRAFFIC] PID: {e.Pid} | {direction} {e.RemoteAddress}:{e.RemotePort} ({e.Size} bytes)");
         //}
 
-        // 4. UI UCHUN: Barcha jarayonlarni ro'yxatini olish ga kerak
+        // 4. UI uchun hamma jarayonlarni ro'yxatini olish ga kerak
         private static void DemonstrateSnapshot(C2DetectorService detector)
         {
             List<MonitoredProcess> allProcesses = detector.GetAllMonitoredProcesses();

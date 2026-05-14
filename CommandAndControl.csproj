@@ -37,8 +37,14 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="MyEventTracer">
-      <HintPath>..\..\..\etw_resources\MyEventTracer.dll</HintPath>
+    <Reference Include="Common">
+      <HintPath>..\..\Users\sodiq\Downloads\Telegram Desktop\Common.dll</HintPath>
+    </Reference>
+    <Reference Include="dc_event_tracer">
+      <HintPath>..\..\Users\sodiq\Downloads\Telegram Desktop\dc_event_tracer.dll</HintPath>
+    </Reference>
+    <Reference Include="dc_helper">
+      <HintPath>..\..\Users\sodiq\Downloads\Telegram Desktop\dc_helper.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
